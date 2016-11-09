@@ -30,7 +30,8 @@ main(List<String> args) async {
     ..pubServe = true
     ..platforms = [
       'vm',
-      'content-shell'
+      'content-shell',
+      'firefox',
     ]
     // Prevent test load timeouts on Smithy.
     ..concurrency = 1
