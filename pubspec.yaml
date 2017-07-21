@@ -37,3 +37,11 @@ transformers:
       $include: test/**_test{.*,}.dart
   # Reminder: dart2js should come after any other transformers that touch Dart code
   - $dart2js
+
+
+dependency_overrides:
+  react:
+    git:
+      url: git@github.com:greglittlefield-wf/react-dart.git
+      ref: 537b2746c5fa2d754806c20c7898d62b7d485eb5 # from internal_instance_refactor
+

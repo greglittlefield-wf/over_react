@@ -280,7 +280,8 @@ react.Component getDartComponent(/* [1] */ instance) {
     return null;
   }
 
-  return _getInternal(instance)?.component;
+  // ignore: avoid_as
+  return (instance as ReactComponent).dartComponent;
 }
 
 /// A function that, when supplied as [ReactPropsMixin.ref], is called with the component instance
