@@ -375,6 +375,7 @@ dynamic get $r {
   var component = _get$R();
 
   return isDartComponent(component)
-      ? component.props.internal.component
+      // ignore: avoid_as
+      ? (component as ReactComponent).dartComponent
       : component;
 }
