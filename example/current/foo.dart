@@ -12,6 +12,22 @@ class FooProps extends UiProps {
 class FooComponent extends UiComponent<FooProps> {
   @override
   render() {
-    return Dom.div()();
+    return (Dom.div()
+      ..key = myDataModel.uniqueId
+    )(
+      (Dom.div()
+        ..className = 'foo'
+      )(
+        1,
+        2,
+      ),
+      Dom.span()(
+        1,
+        2,
+      ),
+    );
   }
 }
+
+
+final myDataModel = new Object();

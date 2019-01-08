@@ -1,0 +1,20 @@
+name: over_react_plugin_loader
+version: 6.2.0
+description: This pubspec determines the version of the analyzer plugin to load. It needs to be in `tools/analyzer_plugin`
+environment:
+  sdk: '>=1.24.0-dev.1.0'
+dependencies:
+  over_react:
+    # This might have ot be absolute since this pubspec.yaml gets copied to a temp folder and then resolved
+    path: /Users/greg.littlefield/workspaces/alt/over_react
+
+# Need to mirror the ones in over_react_test
+dependency_overrides:
+  over_react:
+    # This might have ot be absolute since this pubspec.yaml gets copied to a temp folder and then resolved
+    path: /Users/greg.littlefield/workspaces/alt/over_react
+  over_react_test:
+    git:
+      url: git@github.com:Workiva/over_react_test.git
+      ref: a7128af5cd511b38e426a54f954c2ba26e42706a # from AF-3567_dart2
+  analyzer: ^0.33.0
