@@ -180,7 +180,7 @@ class ParsedDeclarations {
     declarationMap[key_factory] = topLevelVarsOnly(key_factory, declarationMap[key_factory]);
 
     [
-      key_component,
+//      key_component,
       key_props,
       key_state,
       key_abstractComponent,
@@ -191,6 +191,11 @@ class ParsedDeclarations {
     ].forEach((annotationName) {
       declarationMap[annotationName] = classesOnly(annotationName, declarationMap[annotationName]);
     });
+
+    final componentDecls = declarationMap[key_component];
+
+    declarationMap[key_component] = classesOnly(key_component, componentDecls.where((d) => d is! FunctionDeclaration).toList());
+    final functionalComponentDecls = componentDecls.whereType<FunctionDeclaration>().toList();
 
     // Validate that all the declarations that make up a component are used correctly.
 
@@ -213,7 +218,7 @@ class ParsedDeclarations {
 
     // Give the consumer some useful errors if the declarations aren't valid.
 
-    if (!areDeclarationsValid) {
+    if (false && !areDeclarationsValid) {
       if (!noneOfAnyRequiredDecl) {
         key_allComponentRequired.forEach((annotationName) {
           var declarations = declarationMap[annotationName];
@@ -313,6 +318,8 @@ class ParsedDeclarations {
         abstractProps: declarationMap[key_abstractProps].isNotEmpty ? declarationMap[key_abstractProps] : <ClassDeclaration>[],
         abstractState: declarationMap[key_abstractState].isNotEmpty ? declarationMap[key_abstractState] : <ClassDeclaration>[],
 
+        functionalComponents:     functionalComponentDecls,
+
         propsMixins:   declarationMap[key_propsMixin].isNotEmpty ? declarationMap[key_propsMixin] : <ClassDeclaration>[],
         stateMixins:   declarationMap[key_stateMixin].isNotEmpty ? declarationMap[key_stateMixin] : <ClassDeclaration>[],
 
@@ -330,6 +337,8 @@ class ParsedDeclarations {
       ClassDeclaration props,
       ClassDeclaration state,
 
+      List<FunctionDeclaration> functionalComponents,
+
       List<ClassDeclaration> abstractProps,
       List<ClassDeclaration> abstractState,
 
@@ -344,6 +353,7 @@ class ParsedDeclarations {
   }) :
       this.factory       = (factory   == null) ? null : new FactoryNode(factory),
       this.component     = (component == null) ? null : new ComponentNode(component),
+      this.functionalComponents     = new List.unmodifiable(functionalComponents.map((functionalComponent) => new FunctionalComponentNode(functionalComponent))),
       this.props         = (props     == null) ? null : new PropsNode(props),
       this.state         = (state     == null) ? null : new StateNode(state),
 
@@ -418,6 +428,8 @@ class ParsedDeclarations {
   final PropsNode props;
   final StateNode state;
 
+  final List<FunctionalComponentNode> functionalComponents;
+
   final List<AbstractPropsNode> abstractProps;
   final List<AbstractStateNode> abstractState;
 
@@ -465,6 +477,7 @@ class ComponentNode extends NodeWithMeta<ClassDeclaration, annotations.Component
 }
 
 class FactoryNode           extends NodeWithMeta<TopLevelVariableDeclaration, annotations.Factory> {FactoryNode(unit)           : super(unit);}
+class FunctionalComponentNode           extends NodeWithMeta<FunctionDeclaration, annotations.Component> {FunctionalComponentNode(unit)           : super(unit);}
 class PropsNode             extends NodeWithMeta<ClassDeclaration, annotations.Props>              {PropsNode(unit)             : super(unit);}
 class StateNode             extends NodeWithMeta<ClassDeclaration, annotations.State>              {StateNode(unit)             : super(unit);}
 

@@ -60,6 +60,24 @@ ReactDartComponentFactoryProxy registerComponent(react.Component dartComponentFa
   return reactComponentFactory;
 }
 
+ReactComponentFactoryProxy registerFunctionComponent(dynamic dartComponentFactory(Map props),
+    {
+//      bool isWrapper: false,
+//      ReactDartComponentFactoryProxy parentType,
+//      UiFactory builderFactory,
+//      Type componentClass,
+      String displayName
+    }
+) {
+  ReactDartComponentFactoryProxy reactComponentFactory = registerStatelessFunctionalComponent(dartComponentFactory);
+
+  if (displayName != null) {
+    reactComponentFactory.reactClass.displayName = displayName;
+  }
+
+  return reactComponentFactory;
+}
+
 /// Helper function that wraps [registerComponent], and allows an easier way to register abstract components with the
 /// main purpose of type-checking against the abstract component.
 ///

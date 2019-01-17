@@ -229,6 +229,98 @@ class ImplGenerator {
       }
     }
 
+    for (var functionalComponent in declarations.functionalComponents) {
+      final componentFunctionName = functionalComponent.node.name.name;
+      final componentFunctionDestructurerName = '$generatedPrefix$componentFunctionName';
+      final factoryName = componentFunctionName
+          .replaceFirst(new RegExp(r'Component$'), '')
+          .replaceFirst(new RegExp(r'^_\$'), '');
+
+      final consumablePropsName = '${factoryName}Props';
+      // This is backwards from normal generation
+      final consumerPropsName = '_\$$consumablePropsName';
+
+      final propsImplName = consumablePropsName;
+      final propsAccessorsMixinName = _accessorsMixinNameFromConsumerName(consumerPropsName);
+
+      final generatedComponentFactoryName = _componentFactoryName(componentFunctionName);
+
+      final args = functionalComponent.node.functionExpression.parameters.parameterElements;
+      final destructuredPropArgs = args.where((arg) => arg.name != 'props').toList();
+
+
+      // ----------------------------------------------------------------------
+      //   Destructuring function implementation
+      // ----------------------------------------------------------------------
+      outputContentsBuffer..write('''
+      ${''/* TODO make type match */} $componentFunctionDestructurerName(Map props) {
+        final tProps = new $propsImplName(props);
+        return $componentFunctionName(tProps,
+          ${destructuredPropArgs.map((arg) {
+            return 'tProps.${arg.name},';
+          }).join(' ')} 
+        );
+      }
+''');
+
+      // ----------------------------------------------------------------------
+      //   Factory implementation
+      // ----------------------------------------------------------------------
+
+      outputContentsBuffer
+        ..writeln('// React component factory implementation.')
+        ..writeln('//')
+        ..writeln('// Registers component implementation and links type meta to builder factory.')
+      // TODO: verify that the component class has a default constructor?
+        ..writeln('final $generatedComponentFactoryName = registerFunctionComponent($componentFunctionDestructurerName,')
+        ..writeln('    displayName: ${stringLiteral(factoryName)}')
+        ..writeln(');')
+        ..writeln();
+
+      // ----------------------------------------------------------------------
+      //   Props implementation
+      // ----------------------------------------------------------------------
+
+
+      final _syntheticConsumerPropsSource = '''
+@Props()
+class $consumerPropsName extends UiProps {
+   static const PropsMeta meta = _\$metaFor$consumablePropsName; ${'' /* TODO use variable for constant name*/}
+
+      ${destructuredPropArgs.map((arg) {
+        return '${arg.type.name ?? 'var'} ${arg.name};\n';
+      }).join('\n')}
+}      
+      ''';
+
+    print(_syntheticConsumerPropsSource);
+
+      outputContentsBuffer.write(_syntheticConsumerPropsSource);
+      final syntheticConsumerProps = new NodeWithMeta<ClassDeclaration, annotations.Props>(parseCompilationUnit(_syntheticConsumerPropsSource).declarations.single);
+
+      // Generate accessors mixin and props metaFor constant
+      outputContentsBuffer.write(_generateAccessorsMixin(
+          AccessorType.props, propsAccessorsMixinName, syntheticConsumerProps,
+          consumerPropsName,
+          typeParameters: syntheticConsumerProps.node.typeParameters));
+      outputContentsBuffer.write(
+          _generateMetaConstant(AccessorType.props, syntheticConsumerProps));
+
+      // ----------------------------------------------------------------------
+      //   Factory implementation
+      // ----------------------------------------------------------------------
+
+      /// FooProps Foo([Map backingProps]) => new FooProps(backingProps);
+      // TODO make this a variable
+      outputContentsBuffer.writeln('$propsImplName $factoryName([Map backingProps]) => new $propsImplName(backingProps);');
+
+      final String propKeyNamespace = _getAccessorKeyNamespace(syntheticConsumerProps);
+
+      outputContentsBuffer.write(_generateConcretePropsImpl(
+          AccessorType.props, consumerPropsName, propsImplName, generatedComponentFactoryName,
+          propKeyNamespace, syntheticConsumerProps, propsAccessorsMixinName, consumablePropsName, implements: false));
+    }
+
     // ----------------------------------------------------------------------
     //   Props/State Mixins implementations
     // ----------------------------------------------------------------------
@@ -624,7 +716,7 @@ class ImplGenerator {
   }
 
   String _generateAccessorsMixin(AccessorType type, String accessorsMixinName,
-      NodeWithMeta node, String consumerClassName, {bool isPropsOrStateMixin: true, TypeParameterList typeParameters}) {
+      NodeWithMeta<ClassDeclaration, annotations.TypedMap> node, String consumerClassName, {bool isPropsOrStateMixin: true, TypeParameterList typeParameters}) {
     var typeParamsOnClass = typeParameters?.toSource() ?? '';
     var typeParamsOnSuper = removeBoundsFromTypeParameters(typeParameters);
 
@@ -644,11 +736,12 @@ class ImplGenerator {
   }
 
   String _generateConcretePropsImpl(AccessorType type, String consumerName, String implName,
-      String componentFactoryName, String propKeyNamespace, NodeWithMeta<ClassDeclaration, annotations.Props> node, String accessorsMixinName, String consumableName) {
+      String componentFactoryName, String propKeyNamespace, NodeWithMeta<ClassDeclaration, annotations.Props> node, String accessorsMixinName, String consumableName,
+  {bool implements: true}) {
     var typeParamsOnClass = node.node.typeParameters?.toSource() ?? '';
     var typeParamsOnSuper = removeBoundsFromTypeParameters(node.node.typeParameters);
     var classDeclaration = new StringBuffer()
-      ..write('class $implName$typeParamsOnClass extends $consumerName$typeParamsOnSuper with $accessorsMixinName$typeParamsOnSuper implements $consumableName$typeParamsOnSuper {\n');
+      ..write('class $implName$typeParamsOnClass extends $consumerName$typeParamsOnSuper with $accessorsMixinName$typeParamsOnSuper ${implements ? 'implements $consumableName$typeParamsOnSuper' : ''} {\n');
     return (new StringBuffer()
         ..writeln('// Concrete props implementation.')
         ..writeln('//')
