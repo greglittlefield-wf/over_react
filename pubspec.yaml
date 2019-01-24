@@ -41,7 +41,7 @@ dev_dependencies:
 
 
 dependency_overrides:
-  analyzer: ^0.33.0
+  analyzer: ^0.34.0
   over_react_test:
     git:
       url: git@github.com:Workiva/over_react_test.git
